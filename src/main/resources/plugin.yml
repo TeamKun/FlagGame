@@ -1,0 +1,4 @@
+name: FlagGame
+version: ${project.version}
+main: net.kunmc.lab.flaggame.FlagGame
+api-version: 1.15
