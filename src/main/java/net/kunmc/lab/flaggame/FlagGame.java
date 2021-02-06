@@ -3,6 +3,7 @@ package net.kunmc.lab.flaggame;
 import org.bukkit.Material;
 import org.bukkit.command.Command;
 import org.bukkit.command.CommandSender;
+import org.bukkit.configuration.file.FileConfiguration;
 import org.bukkit.entity.Player;
 import org.bukkit.inventory.ItemStack;
 import org.bukkit.plugin.java.JavaPlugin;
@@ -12,17 +13,23 @@ import java.util.*;
 public final class FlagGame extends JavaPlugin {
     private static boolean isStart = false;
     private static boolean isAuto = false;
+    private static boolean isEasyMode = false;
+    private static boolean isSpectator = false;
 
     private static String hostName = "auto";
 
     public static boolean isStart() {
         return isStart;
     }
-
     public static boolean isAuto() {
         return isAuto;
     }
-
+    public static boolean isEasyMode() {
+        return isEasyMode;
+    }
+    public static boolean isSpectator() {
+        return isSpectator;
+    }
     public static String getHostName() {
         return hostName;
     }
@@ -31,6 +38,13 @@ public final class FlagGame extends JavaPlugin {
     public void onEnable() {
         // Plugin startup logic
         // getLogger().info("実行されました");
+        FileConfiguration config = getConfig();
+        try {
+            isEasyMode = config.getBoolean("easymode");
+            isSpectator = config.getBoolean("spectator");
+        } catch (Exception e) {
+            getLogger().info("configが正しく読み込まれませんでした");
+        }
         new GameLogic(this);
     }
 
@@ -44,10 +58,12 @@ public final class FlagGame extends JavaPlugin {
         if (command.getName().equals("flag")) {
             if (sender instanceof Player) {
                 HashMap<String, Integer> players = new HashMap<>();
+                HashMap<String, Boolean> canChange = new HashMap<>();
                 getServer().getOnlinePlayers().forEach(player -> {
                     player.getInventory().setItemInMainHand(new ItemStack(Material.WOODEN_SWORD));
                     player.getInventory().setItemInOffHand(new ItemStack(Material.WOODEN_PICKAXE));
                     players.put(player.getName(), 4);
+                    canChange.put(player.getName(), true);
                 });
 
                 if(args.length >= 1) {
@@ -62,7 +78,7 @@ public final class FlagGame extends JavaPlugin {
                         hostName = "auto";
                         isAuto = true;
                         isStart = true;
-                        GameLogic.init(players);
+                        GameLogic.init(players, canChange);
                         sender.sendMessage("§aホスト [CPU] でゲームを開始しました");
                         return true;
                     }
@@ -71,7 +87,7 @@ public final class FlagGame extends JavaPlugin {
                     hostName = sender.getName();
                 }
                 isStart = true;
-                GameLogic.init(players);
+                GameLogic.init(players, canChange);
                 sender.sendMessage("§aホスト [" + hostName +  "] でゲームを開始しました");
                 return true;
             }
