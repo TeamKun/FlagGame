@@ -9,6 +9,7 @@ import org.bukkit.event.Listener;
 import org.bukkit.event.block.Action;
 import org.bukkit.event.entity.PlayerDeathEvent;
 import org.bukkit.event.player.PlayerInteractEvent;
+import org.bukkit.event.player.PlayerJoinEvent;
 import org.bukkit.event.player.PlayerRespawnEvent;
 import org.bukkit.inventory.ItemStack;
 import org.bukkit.plugin.java.JavaPlugin;
@@ -287,19 +288,20 @@ public class GameLogic implements Listener {
 
                 sendActionBar();
 
-                if (!isJudgeStart) {
-                    plugin.getServer().getOnlinePlayers().forEach(player -> {
-                        if (player.getName().equals(FlagGame.getHostName())) {
-                            return;
-                        }
-                        if (flagState != players.get(player.getName()) && player.getGameMode() != GameMode.SPECTATOR && player.getGameMode() != GameMode.CREATIVE) {
-                            player.getWorld().createExplosion(player.getLocation().add(0, 1, 0), 0, false);
-                            player.getInventory().setItemInMainHand(new ItemStack(Material.AIR));
-                            player.getInventory().setItemInOffHand(new ItemStack(Material.AIR));
-                            player.damage(20);
-                        }
-                    });
-                }
+                plugin.getServer().getOnlinePlayers().forEach(player -> {
+                    giveFlag(player);
+                    if(player.getName().equals(FlagGame.getHostName()) || FlagGame.getHostName().equals("demo")) {
+                        return;
+                    }
+
+                    if (!isJudgeStart && flagState != players.get(player.getName()) && player.getGameMode() != GameMode.SPECTATOR && player.getGameMode() != GameMode.CREATIVE && players.get(player.getName()) < 5 && !FlagGame.isEasyMode()) {
+                        player.getWorld().createExplosion(player.getLocation().add(0, 1, 0), 0, false);
+                        players.put(player.getName(), 5);
+                        player.damage(20);
+                    } else if(!isJudgeStart && flagState != players.get(player.getName()) && player.getGameMode() != GameMode.SPECTATOR && player.getGameMode() != GameMode.CREATIVE && players.get(player.getName()) < 5) {
+                        players.put(player.getName(), 5);
+                    }
+                });
             }
         }, 0L, 2L);
     }
@@ -319,11 +321,17 @@ public class GameLogic implements Listener {
             return;
         }
 
+        if(players.get(player.getName()) >= 5) {
+            return;
+        }
+
         if (action.equals(Action.LEFT_CLICK_AIR) || action.equals(Action.LEFT_CLICK_BLOCK)) {
-            if(canChange.get(player.getName())) {
-                canChange.put(player.getName(), false);
-            } else {
-                return;
+            if(!FlagGame.getHostName().equals("demo")) {
+                if (canChange.get(player.getName())) {
+                    canChange.put(player.getName(), false);
+                } else {
+                    return;
+                }
             }
             if (player.isSneaking()) {
                 if (isHost) {
@@ -368,7 +376,7 @@ public class GameLogic implements Listener {
                     beforeSound = beforeSound == 1 ? 0 : 1;
                     if (!isDayo && colorKind.equals("s")) {
                         flagState = flagState == 1 || flagState == 3 ? 1 : 4;
-                        player.getInventory().setItemInOffHand(new ItemStack(Material.WOODEN_PICKAXE));
+                        giveFlag(player);
                     }
                     setActionBar();
                     setJudgeTimer();
@@ -377,7 +385,7 @@ public class GameLogic implements Listener {
                 int playerFlagState = players.get(player.getName());
                 playerFlagState = playerFlagState == 1 || playerFlagState == 3 ? 1 : 4;
                 players.put(player.getName(), playerFlagState);
-                player.getInventory().setItemInOffHand(new ItemStack(Material.WOODEN_PICKAXE));
+                giveFlag(player);
                 return;
             }
             if (isHost) {
@@ -422,7 +430,7 @@ public class GameLogic implements Listener {
                 beforeSound = beforeSound == 1 ? 0 : 1;
                 if (!isDayo && colorKind.equals("s")) {
                     flagState = flagState == 1 || flagState == 3 ? 3 : 2;
-                    player.getInventory().setItemInOffHand(new ItemStack(Material.WOODEN_HOE));
+                    giveFlag(player);
                 }
                 setActionBar();
                 setJudgeTimer();
@@ -431,15 +439,17 @@ public class GameLogic implements Listener {
             int playerFlagState = players.get(player.getName());
             playerFlagState = playerFlagState == 1 || playerFlagState == 3 ? 3 : 2;
             players.put(player.getName(), playerFlagState);
-            player.getInventory().setItemInOffHand(new ItemStack(Material.WOODEN_HOE));
+            giveFlag(player);
             return;
         }
 
             if (action.equals(Action.RIGHT_CLICK_AIR) || action.equals(Action.RIGHT_CLICK_BLOCK)) {
-                if(canChange.get(player.getName())) {
-                    canChange.put(player.getName(), false);
-                } else {
-                    return;
+                if(!FlagGame.getHostName().equals("demo")) {
+                    if (canChange.get(player.getName())) {
+                        canChange.put(player.getName(), false);
+                    } else {
+                        return;
+                    }
                 }
                 if (player.isSneaking()) {
                     if (isHost) {
@@ -484,7 +494,7 @@ public class GameLogic implements Listener {
                         beforeSound = beforeSound == 1 ? 0 : 1;
                         if (!isDayo && colorKind.equals("s")) {
                             flagState = flagState == 2 || flagState == 3 ? 2 : 4;
-                            player.getInventory().setItemInMainHand(new ItemStack(Material.WOODEN_SWORD));
+                            giveFlag(player);
                         }
                         setActionBar();
                         setJudgeTimer();
@@ -493,7 +503,7 @@ public class GameLogic implements Listener {
                     int playerFlagState = players.get(player.getName());
                     playerFlagState = playerFlagState == 2 || playerFlagState == 3 ? 2 : 4;
                     players.put(player.getName(), playerFlagState);
-                    player.getInventory().setItemInMainHand(new ItemStack(Material.WOODEN_SWORD));
+                    giveFlag(player);
                     return;
                 }
                 if (isHost) {
@@ -538,7 +548,7 @@ public class GameLogic implements Listener {
                     beforeSound = beforeSound == 1 ? 0 : 1;
                     if (!isDayo && colorKind.equals("s")) {
                         flagState = flagState == 2 || flagState == 3 ? 3 : 1;
-                        player.getInventory().setItemInMainHand(new ItemStack(Material.WOODEN_SHOVEL));
+                        giveFlag(player);
                     }
                     setActionBar();
                     setJudgeTimer();
@@ -547,7 +557,7 @@ public class GameLogic implements Listener {
                 int playerFlagState = players.get(player.getName());
                 playerFlagState = playerFlagState == 2 || playerFlagState == 3 ? 3 : 1;
                 players.put(player.getName(), playerFlagState);
-                player.getInventory().setItemInMainHand(new ItemStack(Material.WOODEN_SHOVEL));
+                giveFlag(player);
             }
         }
 
@@ -562,7 +572,20 @@ public class GameLogic implements Listener {
         public void onPlayerRespawn (PlayerRespawnEvent event){
             if (FlagGame.isStart()) {
                 Player player = event.getPlayer();
-                players.put(player.getName(), 4);
+                players.put(player.getName(), flagState);
+                giveFlag(player);
+                if(FlagGame.isSpectator()) {
+                    player.setGameMode(GameMode.SPECTATOR);
+                }
+            }
+        }
+
+        @EventHandler
+        public void  onPLayerJoin (PlayerJoinEvent event) {
+            if (FlagGame.isStart()) {
+                Player player = event.getPlayer();
+                players.put(player.getName(), flagState);
+                giveFlag(player);
                 if(FlagGame.isSpectator()) {
                     player.setGameMode(GameMode.SPECTATOR);
                 }
@@ -591,12 +614,16 @@ public class GameLogic implements Listener {
         private void sendActionBar () {
             String message = titleFlag ? title : titleAfter;
             plugin.getServer().getOnlinePlayers().forEach(player -> {
-                player.sendTitle(message, subTitle, 0, 5, 1);
-                if (player.getName().equals(FlagGame.getHostName()) || player.getGameMode() == GameMode.SPECTATOR || player.getGameMode() == GameMode.CREATIVE) {
+                if(FlagGame.isEasyMode() && players.get(player.getName()) >= 5) {
+                    player.sendTitle("§c間違えてしまった！", "3ターン後に再開します", 0, 5, 1);
+                } else {
+                    player.sendTitle(message, subTitle, 0, 5, 1);
+                }
+                if (!FlagGame.getHostName().equals("demo") && (player.getName().equals(FlagGame.getHostName()) || player.getGameMode() == GameMode.SPECTATOR || player.getGameMode() == GameMode.CREATIVE)) {
                     player.sendActionBar("[正解] " + actionBar);
                     return;
                 }
-                if(FlagGame.isEasyMode()) {
+                if(FlagGame.isEasyMode() || FlagGame.getHostName().equals("demo")) {
                     String playerFlag;
                     switch (players.get(player.getName())) {
                         case 1:
@@ -614,7 +641,13 @@ public class GameLogic implements Listener {
                         default:
                             playerFlag = "未定義";
                     }
-                    player.sendActionBar("[正解] " + actionBar + " §f- [あなた] " + playerFlag);
+                    if (FlagGame.getHostName().equals("demo")) {
+                        player.sendActionBar("[あなたの旗の状態] " + playerFlag);
+                    } else if(players.get(player.getName()) < 5) {
+                        player.sendActionBar("[正解] " + actionBar + " §f- [あなた] " + playerFlag);
+                    } else {
+                        player.sendActionBar("[正解] " + actionBar);
+                    }
                 }
             });
         }
@@ -659,10 +692,66 @@ public class GameLogic implements Listener {
             }
         }
 
+        private void giveFlag(Player player) {
+            Material main = player.getInventory().getItemInMainHand().getType();
+            Material off = player.getInventory().getItemInOffHand().getType();
+            int flag = player.getName().equals(FlagGame.getHostName()) ? flagState : players.get(player.getName());
+            switch (flag) {
+                case 1:
+                    if(main != Material.STICK && off != Material.BONE) {
+                        player.getInventory().setItemInMainHand(new ItemStack(Material.STICK));
+                        player.getInventory().setItemInOffHand(new ItemStack(Material.BONE));
+                    } else if (main != Material.STICK) {
+                        player.getInventory().setItemInMainHand(new ItemStack(Material.STICK));
+                    } else if (off != Material.BONE) {
+                        player.getInventory().setItemInOffHand(new ItemStack(Material.BONE));
+                    }
+                    break;
+                case 2:
+                    if(main != Material.WOODEN_SWORD && off != Material.ARROW) {
+                        player.getInventory().setItemInMainHand(new ItemStack(Material.WOODEN_SWORD));
+                        player.getInventory().setItemInOffHand(new ItemStack(Material.ARROW));
+                    } else if(main != Material.WOODEN_SWORD) {
+                        player.getInventory().setItemInMainHand(new ItemStack(Material.WOODEN_SWORD));
+                    } else if(off != Material.ARROW) {
+                        player.getInventory().setItemInOffHand(new ItemStack(Material.ARROW));
+                    }
+                    break;
+                case 3:
+                    if(main != Material.STICK && off != Material.ARROW) {
+                        player.getInventory().setItemInMainHand(new ItemStack(Material.STICK));
+                        player.getInventory().setItemInOffHand(new ItemStack(Material.ARROW));
+                    } else if(main != Material.STICK) {
+                        player.getInventory().setItemInMainHand(new ItemStack(Material.STICK));
+                    } else if(off != Material.ARROW) {
+                        player.getInventory().setItemInOffHand(new ItemStack(Material.ARROW));
+                    }
+                    break;
+                case 4:
+                    if(main != Material.WOODEN_SWORD && off != Material.BONE) {
+                        player.getInventory().setItemInMainHand(new ItemStack(Material.WOODEN_SWORD));
+                        player.getInventory().setItemInOffHand(new ItemStack(Material.BONE));
+                    } else if(main != Material.WOODEN_SWORD) {
+                        player.getInventory().setItemInMainHand(new ItemStack(Material.WOODEN_SWORD));
+                    } else if(off != Material.BONE) {
+                        player.getInventory().setItemInOffHand(new ItemStack(Material.BONE));
+                    }
+                    break;
+                default:
+                    break;
+            }
+        }
+
         private void setJudgeTimer () {
             isJudgeStart = true;
             JudgeTimer judgeTimer = new JudgeTimer(plugin, 1);
-            judgeTimer.runTaskTimer(plugin, 0, 10L);
+            int speed = FlagGame.getSpeed();
+            if(speed > 0) {
+                judgeTimer.runTaskTimer(plugin, 0, 10L / speed);
+            } else {
+                speed *= -1;
+                judgeTimer.runTaskTimer(plugin, 0, 10L * speed);
+            }
         }
 
         private static class JudgeTimer extends BukkitRunnable {
@@ -685,7 +774,7 @@ public class GameLogic implements Listener {
             public void run() {
                 if (start == 0 && !isEndTitle) {
                     plugin.getServer().getOnlinePlayers().forEach(player -> {
-                        player.getWorld().playSound(player.getLocation(), soundPath, 1, 1);
+                        player.getWorld().playSound(player.getLocation(), soundPath, 1, FlagGame.getSpeed());
                     });
                 }
                 if (titleFlag && !isEndTitle) {
@@ -711,13 +800,19 @@ public class GameLogic implements Listener {
                         canChange.put(player.getName(), true);
                         return;
                     }
-                    if (flagState != players.get(player.getName()) && player.getGameMode() != GameMode.SPECTATOR && player.getGameMode() != GameMode.CREATIVE) {
+                    if (flagState != players.get(player.getName()) && player.getGameMode() != GameMode.SPECTATOR && player.getGameMode() != GameMode.CREATIVE && players.get(player.getName()) < 5  && !FlagGame.isEasyMode()) {
                         player.getWorld().createExplosion(player.getLocation().add(0, 1, 0), 0, false);
-                        player.getInventory().setItemInMainHand(new ItemStack(Material.AIR));
-                        player.getInventory().setItemInOffHand(new ItemStack(Material.AIR));
+                        players.put(player.getName(), 5);
                         player.damage(20);
+                    } else if(flagState != players.get(player.getName()) && player.getGameMode() != GameMode.SPECTATOR && player.getGameMode() != GameMode.CREATIVE && players.get(player.getName()) < 5) {
+                        players.put(player.getName(), 5);
                     }
                     canChange.put(player.getName(), true);
+                    if(players.get(player.getName()) > 7) {
+                        players.put(player.getName(), flagState);
+                    } else if(players.get(player.getName()) >= 5) {
+                        players.put(player.getName(), players.get(player.getName()) + 1);
+                    }
                 });
                 cancel();
             }

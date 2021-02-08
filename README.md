@@ -24,9 +24,13 @@
 ホストなしでゲームを開始
 - flag stop  
 ゲームを停止
+- flag demo  
+  練習モード
+- flag speed-up 数値  
+  速さを変える
+- flag difficulty easy or normal  
+  難易度を設定
   
 ## コンフィグ
-- easymode  
-プレイヤーの旗の状態がアクションバーに表示される
 - spectator  
 間違えたプレイヤーをスペクテイターモードにする

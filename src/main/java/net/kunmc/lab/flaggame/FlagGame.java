@@ -16,6 +16,8 @@ public final class FlagGame extends JavaPlugin {
     private static boolean isEasyMode = false;
     private static boolean isSpectator = false;
 
+    private static int speed = 1;
+
     private static String hostName = "auto";
 
     public static boolean isStart() {
@@ -30,6 +32,9 @@ public final class FlagGame extends JavaPlugin {
     public static boolean isSpectator() {
         return isSpectator;
     }
+    public static int getSpeed() {
+        return speed;
+    }
     public static String getHostName() {
         return hostName;
     }
@@ -40,7 +45,6 @@ public final class FlagGame extends JavaPlugin {
         // getLogger().info("実行されました");
         FileConfiguration config = getConfig();
         try {
-            isEasyMode = config.getBoolean("easymode");
             isSpectator = config.getBoolean("spectator");
         } catch (Exception e) {
             getLogger().info("configが正しく読み込まれませんでした");
@@ -56,12 +60,36 @@ public final class FlagGame extends JavaPlugin {
     @Override
     public boolean onCommand(CommandSender sender, Command command, String label, String[] args) {
         if (command.getName().equals("flag")) {
+            if(args.length == 2) {
+                if(args[0].equals("speed-up")) {
+                    try {
+                        speed = Integer.parseInt(args[1]);
+                        sender.sendMessage("§a速さを" + args[1] + "倍にしました");
+                        return true;
+                    } catch (Exception e) {
+                        speed = 1;
+                        return false;
+                    }
+                }
+                if(args[0].equals("difficulty")) {
+                    if(args[1].equals("normal")) {
+                        isEasyMode = false;
+                        sender.sendMessage("§a難易度をノーマルにしました");
+                        return true;
+                    }
+                    if(args[1].equals("easy")) {
+                        isEasyMode = true;
+                        sender.sendMessage("§a難易度をイージーにしました");
+                        return true;
+                    }
+                }
+            }
             if (sender instanceof Player) {
                 HashMap<String, Integer> players = new HashMap<>();
                 HashMap<String, Boolean> canChange = new HashMap<>();
                 getServer().getOnlinePlayers().forEach(player -> {
                     player.getInventory().setItemInMainHand(new ItemStack(Material.WOODEN_SWORD));
-                    player.getInventory().setItemInOffHand(new ItemStack(Material.WOODEN_PICKAXE));
+                    player.getInventory().setItemInOffHand(new ItemStack(Material.BONE));
                     players.put(player.getName(), 4);
                     canChange.put(player.getName(), true);
                 });
@@ -80,6 +108,13 @@ public final class FlagGame extends JavaPlugin {
                         isStart = true;
                         GameLogic.init(players, canChange);
                         sender.sendMessage("§aホスト [CPU] でゲームを開始しました");
+                        return true;
+                    }
+                    if(args[0].equals("demo")) {
+                        hostName = "demo";
+                        isStart = true;
+                        GameLogic.init(players, canChange);
+                        sender.sendMessage("§a練習モードでゲームを開始しました");
                         return true;
                     }
                     hostName = args[0];
@@ -104,8 +139,17 @@ public final class FlagGame extends JavaPlugin {
                     players.add(player.getName());
                 });
                 players.add("auto");
+                players.add("demo");
                 players.add("stop");
+                players.add("speed-up");
+                players.add("difficulty");
                 return players;
+            }
+            if(args.length == 2 && args[0].equals("speed-up")) {
+                return Arrays.asList("1", "2", "3","-2");
+            }
+            if(args.length == 2 && args[0].equals("difficulty")) {
+                return Arrays.asList("easy", "normal");
             }
         }
         return super.onTabComplete(sender, command, label, args);
