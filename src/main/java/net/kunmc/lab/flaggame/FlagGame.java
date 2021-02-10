@@ -113,6 +113,7 @@ public final class FlagGame extends JavaPlugin {
                         }
                         if(args[1].equals("demo")) {
                             hostName = "demo";
+                            isAuto = false;
                             isStart = true;
                             setPlayers();
                             GameLogic.init(players, canChange);
@@ -120,6 +121,7 @@ public final class FlagGame extends JavaPlugin {
                             return true;
                         }
                         hostName = args[1];
+                        isAuto = false;
                         isStart = true;
                         setPlayers();
                         GameLogic.init(players, canChange);
@@ -131,6 +133,7 @@ public final class FlagGame extends JavaPlugin {
                 if(args.length == 1) {
                     if(args[0].equals("start")) {
                         hostName = sender.getName();
+                        isAuto = false;
                         isStart = true;
                         setPlayers();
                         GameLogic.init(players, canChange);
@@ -178,9 +181,9 @@ public final class FlagGame extends JavaPlugin {
     }
 
     private void setPlayers() {
+        players = new HashMap<>();
+        canChange = new HashMap<>();
         getServer().getOnlinePlayers().forEach(player -> {
-            players = new HashMap<>();
-            canChange = new HashMap<>();
             player.getInventory().setItem(0, new ItemStack(Material.WOODEN_SWORD));
             player.getInventory().setItemInOffHand(new ItemStack(Material.BONE));
             players.put(player.getName(), 4);
