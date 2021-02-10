@@ -447,6 +447,11 @@ public class GameLogic implements Listener {
         }
 
             if (action.equals(Action.RIGHT_CLICK_AIR) || action.equals(Action.RIGHT_CLICK_BLOCK)) {
+                Material main = Material.AIR;
+                main = player.getInventory().getItemInMainHand().getType();
+                if(main != Material.WOODEN_SWORD && main != Material.STICK) {
+                    return;
+                }
                 if(!FlagGame.getHostName().equals("demo")) {
                     if (canChange.get(player.getName())) {
                         canChange.put(player.getName(), false);
