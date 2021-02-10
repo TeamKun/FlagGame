@@ -16,6 +16,7 @@ import org.bukkit.plugin.java.JavaPlugin;
 import org.bukkit.scheduler.BukkitRunnable;
 
 import java.util.HashMap;
+import java.util.Objects;
 import java.util.Random;
 
 public class GameLogic implements Listener {
@@ -297,6 +298,8 @@ public class GameLogic implements Listener {
                     if (!isJudgeStart && flagState != players.get(player.getName()) && player.getGameMode() != GameMode.SPECTATOR && player.getGameMode() != GameMode.CREATIVE && players.get(player.getName()) < 5 && !FlagGame.isEasyMode()) {
                         player.getWorld().createExplosion(player.getLocation().add(0, 1, 0), 0, false);
                         players.put(player.getName(), 5);
+                        player.getInventory().setItem(0, new ItemStack(Material.AIR));
+                        player.getInventory().setItemInOffHand(new ItemStack(Material.AIR));
                         player.damage(20);
                     } else if(!isJudgeStart && flagState != players.get(player.getName()) && player.getGameMode() != GameMode.SPECTATOR && player.getGameMode() != GameMode.CREATIVE && players.get(player.getName()) < 5) {
                         players.put(player.getName(), 5);
@@ -693,46 +696,51 @@ public class GameLogic implements Listener {
         }
 
         private void giveFlag(Player player) {
-            Material main = player.getInventory().getItemInMainHand().getType();
+            Material main;
+            try {
+                main = Objects.requireNonNull(player.getInventory().getItem(0)).getType();
+            } catch (NullPointerException e) {
+                main = Material.AIR;
+            }
             Material off = player.getInventory().getItemInOffHand().getType();
             int flag = player.getName().equals(FlagGame.getHostName()) ? flagState : players.get(player.getName());
             switch (flag) {
                 case 1:
                     if(main != Material.STICK && off != Material.BONE) {
-                        player.getInventory().setItemInMainHand(new ItemStack(Material.STICK));
+                        player.getInventory().setItem(0, new ItemStack(Material.STICK));
                         player.getInventory().setItemInOffHand(new ItemStack(Material.BONE));
                     } else if (main != Material.STICK) {
-                        player.getInventory().setItemInMainHand(new ItemStack(Material.STICK));
+                        player.getInventory().setItem(0, new ItemStack(Material.STICK));
                     } else if (off != Material.BONE) {
                         player.getInventory().setItemInOffHand(new ItemStack(Material.BONE));
                     }
                     break;
                 case 2:
                     if(main != Material.WOODEN_SWORD && off != Material.ARROW) {
-                        player.getInventory().setItemInMainHand(new ItemStack(Material.WOODEN_SWORD));
+                        player.getInventory().setItem(0, new ItemStack(Material.WOODEN_SWORD));
                         player.getInventory().setItemInOffHand(new ItemStack(Material.ARROW));
                     } else if(main != Material.WOODEN_SWORD) {
-                        player.getInventory().setItemInMainHand(new ItemStack(Material.WOODEN_SWORD));
+                        player.getInventory().setItem(0, new ItemStack(Material.WOODEN_SWORD));
                     } else if(off != Material.ARROW) {
                         player.getInventory().setItemInOffHand(new ItemStack(Material.ARROW));
                     }
                     break;
                 case 3:
                     if(main != Material.STICK && off != Material.ARROW) {
-                        player.getInventory().setItemInMainHand(new ItemStack(Material.STICK));
+                        player.getInventory().setItem(0, new ItemStack(Material.STICK));
                         player.getInventory().setItemInOffHand(new ItemStack(Material.ARROW));
                     } else if(main != Material.STICK) {
-                        player.getInventory().setItemInMainHand(new ItemStack(Material.STICK));
+                        player.getInventory().setItem(0, new ItemStack(Material.STICK));
                     } else if(off != Material.ARROW) {
                         player.getInventory().setItemInOffHand(new ItemStack(Material.ARROW));
                     }
                     break;
                 case 4:
                     if(main != Material.WOODEN_SWORD && off != Material.BONE) {
-                        player.getInventory().setItemInMainHand(new ItemStack(Material.WOODEN_SWORD));
+                        player.getInventory().setItem(0, new ItemStack(Material.WOODEN_SWORD));
                         player.getInventory().setItemInOffHand(new ItemStack(Material.BONE));
                     } else if(main != Material.WOODEN_SWORD) {
-                        player.getInventory().setItemInMainHand(new ItemStack(Material.WOODEN_SWORD));
+                        player.getInventory().setItem(0, new ItemStack(Material.WOODEN_SWORD));
                     } else if(off != Material.BONE) {
                         player.getInventory().setItemInOffHand(new ItemStack(Material.BONE));
                     }
@@ -745,13 +753,9 @@ public class GameLogic implements Listener {
         private void setJudgeTimer () {
             isJudgeStart = true;
             JudgeTimer judgeTimer = new JudgeTimer(plugin, 1);
-            int speed = FlagGame.getSpeed();
-            if(speed > 0) {
-                judgeTimer.runTaskTimer(plugin, 0, 10L / speed);
-            } else {
-                speed *= -1;
-                judgeTimer.runTaskTimer(plugin, 0, 10L * speed);
-            }
+            float speed = FlagGame.getSpeed();
+            int period = (int) (10 / speed);
+            judgeTimer.runTaskTimer(plugin, 0, period);
         }
 
         private static class JudgeTimer extends BukkitRunnable {
@@ -774,7 +778,7 @@ public class GameLogic implements Listener {
             public void run() {
                 if (start == 0 && !isEndTitle) {
                     plugin.getServer().getOnlinePlayers().forEach(player -> {
-                        player.getWorld().playSound(player.getLocation(), soundPath, 1, FlagGame.getSpeed());
+                        player.getWorld().playSound(player.getLocation(), soundPath, 1.0F, FlagGame.getSpeed());
                     });
                 }
                 if (titleFlag && !isEndTitle) {
@@ -803,6 +807,8 @@ public class GameLogic implements Listener {
                     if (flagState != players.get(player.getName()) && player.getGameMode() != GameMode.SPECTATOR && player.getGameMode() != GameMode.CREATIVE && players.get(player.getName()) < 5  && !FlagGame.isEasyMode()) {
                         player.getWorld().createExplosion(player.getLocation().add(0, 1, 0), 0, false);
                         players.put(player.getName(), 5);
+                        player.getInventory().setItem(0, new ItemStack(Material.AIR));
+                        player.getInventory().setItemInOffHand(new ItemStack(Material.AIR));
                         player.damage(20);
                     } else if(flagState != players.get(player.getName()) && player.getGameMode() != GameMode.SPECTATOR && player.getGameMode() != GameMode.CREATIVE && players.get(player.getName()) < 5) {
                         players.put(player.getName(), 5);

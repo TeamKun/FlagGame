@@ -16,20 +16,20 @@
 高度なフェイントがかけられる
 
 ## コマンド
-- flag  
+- flag start  
 送信者がホストでゲームを開始
-- flag プレイヤー  
+- flag start プレイヤー  
 指定したプレイヤーがホストでゲームを開始  
-- flag auto  
+- flag start auto  
 ホストなしでゲームを開始
+- flag start demo  
+  練習モード
+- flag option speed 数値  
+  速さを変える
+- flag option difficulty easy or normal  
+  難易度を設定  
 - flag stop  
 ゲームを停止
-- flag demo  
-  練習モード
-- flag speed-up 数値  
-  速さを変える
-- flag difficulty easy or normal  
-  難易度を設定
   
 ## コンフィグ
 - spectator  

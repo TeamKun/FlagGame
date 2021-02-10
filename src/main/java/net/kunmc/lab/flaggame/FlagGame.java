@@ -9,6 +9,8 @@ import org.bukkit.inventory.ItemStack;
 import org.bukkit.plugin.java.JavaPlugin;
 
 import java.util.*;
+import java.util.stream.Collectors;
+import java.util.stream.Stream;
 
 public final class FlagGame extends JavaPlugin {
     private static boolean isStart = false;
@@ -16,7 +18,7 @@ public final class FlagGame extends JavaPlugin {
     private static boolean isEasyMode = false;
     private static boolean isSpectator = false;
 
-    private static int speed = 1;
+    private static float speed = 1.0F;
 
     private static String hostName = "auto";
 
@@ -32,12 +34,15 @@ public final class FlagGame extends JavaPlugin {
     public static boolean isSpectator() {
         return isSpectator;
     }
-    public static int getSpeed() {
+    public static float getSpeed() {
         return speed;
     }
     public static String getHostName() {
         return hostName;
     }
+
+    private static HashMap<String, Integer> players;
+    private static HashMap<String, Boolean> canChange;
 
     @Override
     public void onEnable() {
@@ -59,72 +64,87 @@ public final class FlagGame extends JavaPlugin {
 
     @Override
     public boolean onCommand(CommandSender sender, Command command, String label, String[] args) {
+        if(args.length == 0) {
+            return false;
+        }
         if (command.getName().equals("flag")) {
-            if(args.length == 2) {
-                if(args[0].equals("speed-up")) {
-                    try {
-                        speed = Integer.parseInt(args[1]);
-                        sender.sendMessage("§a速さを" + args[1] + "倍にしました");
-                        return true;
-                    } catch (Exception e) {
-                        speed = 1;
-                        return false;
+            if(args.length == 3) {
+                if(args[0].equals("option")) {
+                    if(args[1].equals("speed")) {
+                        try {
+                            speed = Float.parseFloat(args[2]);
+                            if(speed <= 0) {
+                                sender.sendMessage("無効な値です");
+                            } else {
+                                sender.sendMessage("§a速さを" + args[2] + "倍にしました");
+                            }
+                            return true;
+                        } catch (Exception e) {
+                            speed = 1;
+                            sender.sendMessage("無効な値です");
+                            return true;
+                        }
                     }
-                }
-                if(args[0].equals("difficulty")) {
-                    if(args[1].equals("normal")) {
-                        isEasyMode = false;
-                        sender.sendMessage("§a難易度をノーマルにしました");
-                        return true;
-                    }
-                    if(args[1].equals("easy")) {
-                        isEasyMode = true;
-                        sender.sendMessage("§a難易度をイージーにしました");
-                        return true;
+                    if(args[1].equals("difficulty")) {
+                        if(args[2].equals("normal")) {
+                            isEasyMode = false;
+                            sender.sendMessage("§a難易度をノーマルにしました");
+                            return true;
+                        }
+                        if(args[2].equals("easy")) {
+                            isEasyMode = true;
+                            sender.sendMessage("§a難易度をイージーにしました");
+                            return true;
+                        }
                     }
                 }
             }
             if (sender instanceof Player) {
-                HashMap<String, Integer> players = new HashMap<>();
-                HashMap<String, Boolean> canChange = new HashMap<>();
-                getServer().getOnlinePlayers().forEach(player -> {
-                    player.getInventory().setItemInMainHand(new ItemStack(Material.WOODEN_SWORD));
-                    player.getInventory().setItemInOffHand(new ItemStack(Material.BONE));
-                    players.put(player.getName(), 4);
-                    canChange.put(player.getName(), true);
-                });
+                if(args.length == 2) {
+                    if(args[0].equals("start")) {
+                        if(args[1].equals("auto")) {
+                            hostName = "auto";
+                            isAuto = true;
+                            isStart = true;
+                            setPlayers();
+                            GameLogic.init(players, canChange);
+                            sender.sendMessage("§aホスト [CPU] でゲームを開始しました");
+                            return true;
+                        }
+                        if(args[1].equals("demo")) {
+                            hostName = "demo";
+                            isStart = true;
+                            setPlayers();
+                            GameLogic.init(players, canChange);
+                            sender.sendMessage("§a練習モードでゲームを開始しました");
+                            return true;
+                        }
+                        hostName = args[1];
+                        isStart = true;
+                        setPlayers();
+                        GameLogic.init(players, canChange);
+                        sender.sendMessage("§aホスト [" + hostName +  "] でゲームを開始しました");
+                        return true;
 
-                if(args.length >= 1) {
+                    }
+                }
+                if(args.length == 1) {
+                    if(args[0].equals("start")) {
+                        hostName = sender.getName();
+                        isStart = true;
+                        setPlayers();
+                        GameLogic.init(players, canChange);
+                        sender.sendMessage("§aホスト [" + hostName +  "] でゲームを開始しました");
+                        return true;
+                    }
                     if(args[0].equals("stop")) {
                         hostName = "auto";
-                        isStart = false;
                         isAuto = false;
+                        isStart = false;
                         sender.sendMessage("§aゲームを停止しました");
                         return true;
                     }
-                    if(args[0].equals("auto")) {
-                        hostName = "auto";
-                        isAuto = true;
-                        isStart = true;
-                        GameLogic.init(players, canChange);
-                        sender.sendMessage("§aホスト [CPU] でゲームを開始しました");
-                        return true;
-                    }
-                    if(args[0].equals("demo")) {
-                        hostName = "demo";
-                        isStart = true;
-                        GameLogic.init(players, canChange);
-                        sender.sendMessage("§a練習モードでゲームを開始しました");
-                        return true;
-                    }
-                    hostName = args[0];
-                } else {
-                    hostName = sender.getName();
                 }
-                isStart = true;
-                GameLogic.init(players, canChange);
-                sender.sendMessage("§aホスト [" + hostName +  "] でゲームを開始しました");
-                return true;
             }
         }
         return false;
@@ -134,24 +154,37 @@ public final class FlagGame extends JavaPlugin {
     public List<String> onTabComplete(CommandSender sender, Command command, String label, String[] args) {
         if(command.getName().equals("flag")) {
             if(args.length == 1) {
-                List<String> players = new ArrayList<>();
-                getServer().getOnlinePlayers().forEach(player -> {
-                    players.add(player.getName());
-                });
+                return Stream.of("start", "stop", "option").filter(e -> e.startsWith(args[0]))
+                        .collect(Collectors.toList());
+            }
+            if(args.length == 2 && args[0].equals("start")) {
+                ArrayList<String> players = new ArrayList<>();
+                getServer().getOnlinePlayers().forEach(player -> players.add(player.getName()));
                 players.add("auto");
                 players.add("demo");
-                players.add("stop");
-                players.add("speed-up");
-                players.add("difficulty");
-                return players;
+                return players.stream().filter(e -> e.startsWith(args[1])).collect(Collectors.toList());
             }
-            if(args.length == 2 && args[0].equals("speed-up")) {
-                return Arrays.asList("1", "2", "3","-2");
+            if(args.length == 2 && args[0].equals("option")) {
+                return Stream.of("speed", "difficulty").filter(e -> e.startsWith(args[1])).collect(Collectors.toList());
             }
-            if(args.length == 2 && args[0].equals("difficulty")) {
-                return Arrays.asList("easy", "normal");
+            if(args.length == 3 && args[1].equals("speed")) {
+                return Collections.singletonList("数値");
+            }
+            if(args.length == 3 && args[1].equals("difficulty")) {
+                return Stream.of("normal", "easy").filter(e -> e.startsWith(args[2])).collect(Collectors.toList());
             }
         }
         return super.onTabComplete(sender, command, label, args);
+    }
+
+    private void setPlayers() {
+        getServer().getOnlinePlayers().forEach(player -> {
+            players = new HashMap<>();
+            canChange = new HashMap<>();
+            player.getInventory().setItem(0, new ItemStack(Material.WOODEN_SWORD));
+            player.getInventory().setItemInOffHand(new ItemStack(Material.BONE));
+            players.put(player.getName(), 4);
+            canChange.put(player.getName(), true);
+        });
     }
 }
