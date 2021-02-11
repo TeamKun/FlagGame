@@ -324,11 +324,17 @@ public class GameLogic implements Listener {
             return;
         }
 
+
         if(players.get(player.getName()) >= 5) {
             return;
         }
 
         if (action.equals(Action.LEFT_CLICK_AIR) || action.equals(Action.LEFT_CLICK_BLOCK)) {
+            Material main = Material.AIR;
+            main = player.getInventory().getItemInMainHand().getType();
+            if(main != Material.WOODEN_SWORD && main != Material.STICK) {
+                return;
+            }
             if(!FlagGame.getHostName().equals("demo")) {
                 if (canChange.get(player.getName())) {
                     canChange.put(player.getName(), false);
@@ -624,9 +630,12 @@ public class GameLogic implements Listener {
             plugin.getServer().getOnlinePlayers().forEach(player -> {
                 if(FlagGame.isEasyMode() && players.get(player.getName()) >= 5) {
                     player.sendTitle("§c間違えてしまった！", "3ターン後に再開します", 0, 5, 1);
+                } else if(FlagGame.getHostName().equals("demo")) {
+                    player.sendTitle(message, "クリックで上げる・シフト同時押しで下げる", 0, 5, 1);
                 } else {
                     player.sendTitle(message, subTitle, 0, 5, 1);
                 }
+
                 if (!FlagGame.getHostName().equals("demo") && (player.getName().equals(FlagGame.getHostName()) || player.getGameMode() == GameMode.SPECTATOR || player.getGameMode() == GameMode.CREATIVE)) {
                     player.sendActionBar("[正解] " + actionBar);
                     return;
@@ -760,7 +769,16 @@ public class GameLogic implements Listener {
             JudgeTimer judgeTimer = new JudgeTimer(plugin, 1);
             float speed = FlagGame.getSpeed();
             int period = (int) (10 / speed);
+            if(period <= 0) {
+                period = 1;
+            }
             judgeTimer.runTaskTimer(plugin, 0, period);
+            Counter counter = new Counter();
+            period = (int) (2 / speed);
+            if(period <= 0) {
+                period = 1;
+            }
+            counter.runTaskTimer(plugin, 0, period);
         }
 
         private static class JudgeTimer extends BukkitRunnable {
@@ -792,7 +810,7 @@ public class GameLogic implements Listener {
                 }
                 titleFlag = false;
                 if (start <= buffer) {
-                    subTitle = " §f判定開始まであと§6" + (buffer - start) + "秒";
+                    // subTitle = " §f判定開始まであと§6" + (buffer - start) + "秒";
                     if (isDelay) {
                         isDelay = false;
                         return;
@@ -827,5 +845,21 @@ public class GameLogic implements Listener {
                 });
                 cancel();
             }
+    }
+
+    private static class Counter extends BukkitRunnable {
+        private double count;
+        public Counter() {
+            count = 2.0;
+        }
+        @Override
+        public void run() {
+            if(count <= 0) {
+                cancel();
+                return;
+            }
+            count -= 0.1;
+            subTitle = " §f判定開始まであと§6" + (String.format("%.1f", Math.abs(count)))+ "秒";
+        }
     }
 }
